@@ -85,7 +85,7 @@ export const chatProject = async (req: Request, res: Response) => {
     }
 
     // Pass projectId as required by module 4
-    const { explanation, code, fileClass } = await generateManimCode(project._id.toString(), prompt, project.chatHistory);
+    const { explanation, code, fileClass } = await generateManimCode(project._id.toString(), prompt, project.chatHistory, project.currentCode);
 
     project.chatHistory.push({ role: 'user', prompt, code: '' });
     project.chatHistory.push({ role: 'ai', prompt: explanation, code });

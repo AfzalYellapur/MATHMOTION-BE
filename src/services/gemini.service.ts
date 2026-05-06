@@ -3,24 +3,24 @@ import { IChatMessage } from '../models/Project';
 
 export const activeGenerations = new Map<string, AbortController>();
 
-class Mutex {
-  private mutex = Promise.resolve();
+// class Mutex {
+//   private mutex = Promise.resolve();
 
-  lock(): Promise<() => void> {
-    let begin: (unlock: () => void) => void = (unlock) => { };
+//   lock(): Promise<() => void> {
+//     let begin: (unlock: () => void) => void = (unlock) => { };
 
-    this.mutex = this.mutex.then(() => {
-      return new Promise(begin);
-    });
+//     this.mutex = this.mutex.then(() => {
+//       return new Promise(begin);
+//     });
 
-    return new Promise((res) => {
-      begin = res;
-    });
-  }
-}
+//     return new Promise((res) => {
+//       begin = res;
+//     });
+//   }
+// }
 
-// Create a global lock for Gemini requests
-const geminiLock = new Mutex();
+// // Create a global lock for Gemini requests
+// const geminiLock = new Mutex();
 
 export const cancelGeneration = (projectId: string) => {
   const controller = activeGenerations.get(projectId);
@@ -35,7 +35,8 @@ export const cancelGeneration = (projectId: string) => {
 export const generateManimCode = async (
   projectId: string,
   prompt: string,
-  history: IChatMessage[]
+  history: IChatMessage[],
+  currentCode: string
 ): Promise<{ explanation: string; code: string; fileClass: string }> => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -50,14 +51,32 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3.1-flash-lite-preview',
+    model: 'gemini-2.5-flash-lite',
     systemInstruction: systemInstruction
   });
 
-  const formattedHistory = history.map((msg) => ({
-    role: msg.role === 'ai' ? 'model' : 'user',
-    parts: [{ text: msg.prompt + (msg.code ? `\nCode:\n${msg.code}` : '') }],
-  }));
+  // --- CONTEXT MINIMIZATION ---
+  // 1. Sliding Window: Keep only the last 6 messages (3 user, 3 ai)
+  const recentHistory = history.slice(-10);
+
+  // 2. Code Stripping: Map the history for Gemini
+  const formattedHistory = recentHistory.map((msg, index) => {
+    const isLastMessage = index === recentHistory.length - 1;
+    const isAiMessage = msg.role === 'ai';
+
+    // Always start with the text/explanation
+    let textContent = msg.prompt;
+
+    if (isAiMessage && isLastMessage && currentCode) {
+      textContent += `\n[CURRENT FILE STATE - INCLUDING MANUAL EDITS BY THE USER]:\n\`\`\`python\n${currentCode}\n\`\`\``;
+    }
+
+    return {
+      role: isAiMessage ? 'model' : 'user',
+      parts: [{ text: textContent }],
+    };
+  });
+  // -----------------------------------
 
 
   const chat = model.startChat({
@@ -67,7 +86,7 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
   const abortController = new AbortController();
   activeGenerations.set(projectId, abortController);
 
-  const unlock = await geminiLock.lock();
+  // const unlock = await geminiLock.lock();
 
   try {
     if (abortController.signal.aborted) throw new Error('AbortError');
@@ -102,6 +121,6 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
     throw err;
   } finally {
     activeGenerations.delete(projectId);
-    unlock();
+    // unlock();
   }
 };

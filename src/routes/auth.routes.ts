@@ -5,6 +5,7 @@ import {
   logout,
   me,
   verifyEmail,
+  resendOtp,
   forgotPassword,
   resetPassword
 } from '../controllers/auth.controller';
@@ -17,6 +18,7 @@ router.post('/login', login);
 router.post('/logout', logout);
 router.get('/me', requireAuth, me);
 router.post('/verify-email', verifyEmail);
+router.post('/resend-otp', resendOtp);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
