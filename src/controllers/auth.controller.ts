@@ -86,13 +86,11 @@ export const verifyEmail = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
 
-    // 1. Verify the user
     user.isVerified = true;
     user.otpSecret = undefined;
     user.otpExpiry = undefined;
     await user.save();
 
-    // 2. Automatically log them in by issuing the JWT!
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '24h' });
     setTokenCookie(res, token);
 
@@ -108,22 +106,17 @@ export const resendOtp = async (req: Request, res: Response) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      // Return 404 if the user doesn't exist
       return res.status(404).json({ error: 'User not found' });
     }
 
     if (user.isVerified) {
-      // Prevent resending if already verified
       return res.status(400).json({ error: 'User is already verified' });
     }
 
-    // Generate a new 6-character OTP and set a new 10-minute expiry
     const otpSecret = crypto.randomBytes(3).toString('hex').toUpperCase();
     user.otpSecret = otpSecret;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
-
-    // Send the new email
     await sendEmail(email, otpSecret);
 
     res.json({ message: 'If the email exists, an OTP was sent.' });
@@ -147,7 +140,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
     res.json({ message: 'If the email exists, an OTP was sent.' });
 
-    // Always return 200 to prevent email enumeration
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

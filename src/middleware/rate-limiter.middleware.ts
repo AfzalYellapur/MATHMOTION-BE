@@ -5,7 +5,6 @@ export const expensiveEndpointLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 5, // Limit each IP/User to 5 requests per window
   keyGenerator: (req: Request) => {
-    // If the user is authenticated, limit by user ID. Otherwise, fallback to IP.
     return req.user?.id || req.ip || 'unknown';
   },
   message: {

@@ -84,7 +84,6 @@ export const chatProject = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Project not found or unauthorized' });
     }
 
-    // Pass projectId as required by module 4
     const { explanation, code, fileClass } = await generateManimCode(project._id.toString(), prompt, project.chatHistory, project.currentCode);
 
     project.chatHistory.push({ role: 'user', prompt, code: '' });
@@ -131,7 +130,6 @@ export const buildProject = async (req: Request, res: Response) => {
     const { fileClass } = req.body;
     const userId = req.user!.id;
 
-    // AWS Queue Overload Shield
     const processingJob = await RenderJob.findOne({ userId, status: JobStatus.PROCESSING });
     if (processingJob) {
       return res.status(429).json({ error: 'Too Many Requests. You already have a render job processing.' });
@@ -164,7 +162,7 @@ export const buildProject = async (req: Request, res: Response) => {
 
     const newJob = new RenderJob({
       projectId: project._id,
-      userId: userId, // Added userId as per 4.2 shield requirements
+      userId: userId,
       status: JobStatus.PENDING,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });

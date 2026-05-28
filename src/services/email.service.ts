@@ -1,10 +1,9 @@
 import nodemailer from 'nodemailer';
 
-// 1. Create the transporter directly using your environment variables
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 465,
-  secure: true, // true for port 465
+  secure: true,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -13,7 +12,6 @@ const transporter = nodemailer.createTransport({
 
 export const sendEmail = async (to: string, otp: string) => {
   try {
-    // 2. Send the email using the configured transporter
     const info = await transporter.sendMail({
       from: process.env.MAIL_FROM_ADDRESS,
       to,
@@ -32,7 +30,6 @@ export const sendEmail = async (to: string, otp: string) => {
     console.log(`[Email Service] Message sent successfully to ${to}. Message ID: ${info.messageId}`);
   } catch (err) {
     console.error('[Email Service] Failed to send email:', err);
-    // 3. Throw the error so the calling controller knows the OTP failed to send
     throw err;
   }
 };

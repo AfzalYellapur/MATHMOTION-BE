@@ -24,15 +24,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
 const initializeApp = async () => {
-  // Connect to MongoDB
   await connectDB();
-
-  // Start the background worker for BullMQ
   startWorker();
-
-  // Start the 15-minute cleanup cron job
   startCleanupCron();
-
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });

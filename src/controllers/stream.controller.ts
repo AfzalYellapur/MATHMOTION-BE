@@ -4,12 +4,11 @@ import { RenderJob, JobStatus } from '../models/RenderJob';
 import { QueueEvents } from 'bullmq';
 import { redisConnection } from '../config/redis';
 
-// Create a global QueueEvents instance to listen to the RenderQueue
 const queueEvents = new QueueEvents('RenderQueue', { connection: redisConnection });
 
 export const streamStatus = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const userId = req.user!.id; // Auth protection
+  const userId = req.user!.id;
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -41,7 +40,6 @@ export const streamStatus = async (req: Request, res: Response) => {
       return res.end();
     }
 
-    // Set up listeners for BullMQ events
     const onCompleted = async ({ jobId, returnvalue }: { jobId: string; returnvalue: string }) => {
       if (jobId === activeJobId.toString()) {
         const completedJob = await RenderJob.findById(activeJobId);

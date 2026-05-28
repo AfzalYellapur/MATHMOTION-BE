@@ -3,25 +3,6 @@ import { IChatMessage } from '../models/Project';
 
 export const activeGenerations = new Map<string, AbortController>();
 
-// class Mutex {
-//   private mutex = Promise.resolve();
-
-//   lock(): Promise<() => void> {
-//     let begin: (unlock: () => void) => void = (unlock) => { };
-
-//     this.mutex = this.mutex.then(() => {
-//       return new Promise(begin);
-//     });
-
-//     return new Promise((res) => {
-//       begin = res;
-//     });
-//   }
-// }
-
-// // Create a global lock for Gemini requests
-// const geminiLock = new Mutex();
-
 export const cancelGeneration = (projectId: string) => {
   const controller = activeGenerations.get(projectId);
   if (controller) {
@@ -55,16 +36,12 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
     systemInstruction: systemInstruction
   });
 
-  // --- CONTEXT MINIMIZATION ---
-  // 1. Sliding Window: Keep only the last 6 messages (3 user, 3 ai)
   const recentHistory = history.slice(-10);
 
-  // 2. Code Stripping: Map the history for Gemini
   const formattedHistory = recentHistory.map((msg, index) => {
     const isLastMessage = index === recentHistory.length - 1;
     const isAiMessage = msg.role === 'ai';
 
-    // Always start with the text/explanation
     let textContent = msg.prompt;
 
     if (isAiMessage && isLastMessage && currentCode) {
@@ -76,8 +53,6 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
       parts: [{ text: textContent }],
     };
   });
-  // -----------------------------------
-
 
   const chat = model.startChat({
     history: formattedHistory,
@@ -85,8 +60,6 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
 
   const abortController = new AbortController();
   activeGenerations.set(projectId, abortController);
-
-  // const unlock = await geminiLock.lock();
 
   try {
     if (abortController.signal.aborted) throw new Error('AbortError');
@@ -121,6 +94,5 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
     throw err;
   } finally {
     activeGenerations.delete(projectId);
-    // unlock();
   }
 };
