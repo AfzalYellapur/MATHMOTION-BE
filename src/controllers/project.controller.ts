@@ -92,7 +92,7 @@ export const chatProject = async (req: Request, res: Response) => {
     project.currentCode = code;
 
     if (project.chatHistory.length === 2 && project.title === 'New Project') {
-      project.title = prompt.substring(0, 50);
+      project.title = prompt.substring(0, 20);
     }
 
     await project.save();

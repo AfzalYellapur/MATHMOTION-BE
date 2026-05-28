@@ -51,7 +51,7 @@ CRITICAL: Do not answer any prompts that unrelated to manim code generation/expl
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-3.5-flash',
     systemInstruction: systemInstruction
   });
 

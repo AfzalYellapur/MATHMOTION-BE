@@ -31,12 +31,7 @@ export const register = async (req: Request, res: Response) => {
     const user = new User({ email, passwordHash, otpSecret, otpExpiry });
     await user.save();
 
-    await sendEmail(
-      email,
-      'Verify your email for Manim Co-Pilot',
-      `Your OTP is: ${otpSecret}`
-    );
-
+    await sendEmail(email, otpSecret);
     res.status(201).json({ message: 'User created. Please check your email for the OTP.' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -129,11 +124,7 @@ export const resendOtp = async (req: Request, res: Response) => {
     await user.save();
 
     // Send the new email
-    await sendEmail(
-      email,
-      'Verify your email for Manim Co-Pilot (Resend)',
-      `Your new OTP is: ${otpSecret}`
-    );
+    await sendEmail(email, otpSecret);
 
     res.json({ message: 'If the email exists, an OTP was sent.' });
   } catch (err: any) {
@@ -152,11 +143,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
-      await sendEmail(
-        email,
-        'Password Reset OTP',
-        `Your password reset OTP is: ${otpSecret}`
-      );
+      await sendEmail(email, otpSecret);
     }
     res.json({ message: 'If the email exists, an OTP was sent.' });
 
