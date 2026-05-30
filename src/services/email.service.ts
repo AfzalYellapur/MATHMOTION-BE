@@ -1,35 +1,26 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendEmail = async (to: string, otp: string) => {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.MAIL_FROM_ADDRESS,
+    const { data, error } = await resend.emails.send({
+      from: 'MathMotion <noreply@mathmotion.in>', 
       to,
-      subject: 'Verify your MathMotion Account',
-      text: `Your verification code is: ${otp}. This code will expire soon.`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Welcome to MathMotion!</h2>
-          <p>Your verification code is:</p>
-          <h1 style="color: #005cc5ff; letter-spacing: 2px;">${otp}</h1>
-          <p>If you did not request this, please ignore this email.</p>
-        </div>
-      `,
+      subject: 'MathMotion Verification Code',
+      html: `<p>Welcome to MathMotion! Your 6-character verification code is: <strong>${otp}</strong></p>`
     });
 
-    console.log(`[Email Service] Message sent successfully to ${to}. Message ID: ${info.messageId}`);
+    if (error) {
+      console.error("Resend API Error:", error);
+      throw new Error("Failed to send email via Resend");
+    }
+
+    console.log("Email sent successfully!", data);
+    return data;
+    
   } catch (err) {
-    console.error('[Email Service] Failed to send email:', err);
+    console.error("Email Service Error:", err);
     throw err;
   }
 };
