@@ -1,15 +1,11 @@
-import rateLimit from 'express-rate-limit';
-import { Request } from 'express';
+import { rateLimit } from 'express-rate-limit';
+
+export const rateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
 
 export const expensiveEndpointLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 5, // Limit each IP/User to 5 requests per window
-  keyGenerator: (req: Request) => {
-    return req.user?.id || req.ip || 'unknown';
-  },
-  message: {
-    error: 'Too many requests from this IP/User, please try again after a minute.',
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: 15 * 60 * 1000,
+  max: 20,
 });
