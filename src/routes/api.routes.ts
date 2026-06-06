@@ -5,6 +5,7 @@ import {
   deleteProject,
   activateProject,
   chatProject,
+  updateProjectTitle,
   buildProject,
   cancelGenerationController,
   cancelRender,
@@ -22,14 +23,12 @@ router.get('/projects', getProjects);
 router.post('/projects/new', createProject);
 router.delete('/projects/:id', deleteProject);
 router.put('/projects/:id/activate', activateProject);
-
+router.patch('/projects/:id/title', updateProjectTitle);
 router.post('/projects/:id/chat', expensiveEndpointLimiter, chatProject);
 router.post('/projects/:id/cancel-generation', cancelGenerationController);
 router.put('/projects/:id/code', saveProjectCode);
-
 router.post('/projects/:id/build', expensiveEndpointLimiter, buildProject);
 router.post('/projects/:id/cancel-render', cancelRender);
-
 router.get('/projects/:id/status/stream', streamStatus);
 
 export default router;

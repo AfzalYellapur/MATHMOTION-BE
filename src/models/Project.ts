@@ -17,6 +17,7 @@ export interface IProject {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  fileClass?: string;
 }
 
 const ChatMessageSchema = new Schema<IChatMessage>(
@@ -37,6 +38,11 @@ const ProjectSchema = new Schema<IProject>(
     currentCode: { type: String, default: '' },
     activeJobId: { type: String, default: null, ref: 'RenderJob' },
     isActive: { type: Boolean, default: true },
+    fileClass: {
+    type: String,
+    required: false,
+    default: null
+  }
   },
   { timestamps: true }
 );

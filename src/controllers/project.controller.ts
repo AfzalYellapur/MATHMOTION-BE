@@ -3,10 +3,6 @@ import { Project } from '../models/Project';
 import { RenderJob, JobStatus } from '../models/RenderJob';
 import { generateManimCode, cancelGeneration } from '../services/gemini.service';
 import { addRenderJobToQueue, renderQueue } from '../services/queue/producer';
-import fs from 'fs';
-import path from 'path';
-
-const VIDEO_DIR = process.env.VIDEO_STORAGE_PATH || path.join(__dirname, '../../../../worker/videos');
 
 export const getProjects = async (req: Request, res: Response) => {
   try {
@@ -89,9 +85,10 @@ export const chatProject = async (req: Request, res: Response) => {
     project.chatHistory.push({ role: 'user', prompt, code: '' });
     project.chatHistory.push({ role: 'ai', prompt: explanation, code });
     project.currentCode = code;
+    project.fileClass = fileClass;
 
     if (project.chatHistory.length === 2 && project.title === 'New Project') {
-      project.title = prompt.substring(0, 20);
+      project.title = (fileClass ? fileClass : prompt.substring(0, 20));
     }
 
     await project.save();
@@ -101,6 +98,32 @@ export const chatProject = async (req: Request, res: Response) => {
     if (err.message === 'AbortError') {
       return res.status(400).json({ error: 'Generation was cancelled' });
     }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateProjectTitle = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+    const userId = req.user!.id;
+
+    if (!title || typeof title !== 'string' || title.trim() === '') {
+      return res.status(400).json({ error: 'A valid title is required' });
+    }
+
+    const project = await Project.findOneAndUpdate(
+      { _id: id, userId },
+      { title: title.trim() },
+      { new: true }
+    );
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or unauthorized' });
+    }
+
+    res.json({ message: 'Project title updated successfully', project });
+  } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 };
@@ -147,14 +170,6 @@ export const buildProject = async (req: Request, res: Response) => {
     }
 
     if (activeJob && activeJob.status === JobStatus.COMPLETED) {
-      if (activeJob.videoUrl) {
-        const urlParts = activeJob.videoUrl.split('/');
-        const filename = urlParts[urlParts.length - 1];
-        if (filename) {
-          const filepath = path.join(VIDEO_DIR, filename);
-          if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-        }
-      }
       await RenderJob.findByIdAndDelete(activeJob._id);
     } else if (activeJob) {
       await RenderJob.findByIdAndDelete(activeJob._id);
@@ -171,7 +186,7 @@ export const buildProject = async (req: Request, res: Response) => {
     project.activeJobId = newJob._id;
     await project.save();
 
-    await addRenderJobToQueue(newJob._id as string, project.currentCode, fileClass || 'MainScene');
+    await addRenderJobToQueue(newJob._id as string, project.currentCode, fileClass);
 
     res.status(202).json({ jobId: newJob._id });
   } catch (err: any) {
@@ -212,7 +227,7 @@ export const cancelRender = async (req: Request, res: Response) => {
 export const saveProjectCode = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { code } = req.body;
+    const { code, fileClass } = req.body;
     const userId = req.user!.id;
 
     if (typeof code !== 'string') {
@@ -221,7 +236,12 @@ export const saveProjectCode = async (req: Request, res: Response) => {
 
     const project = await Project.findOneAndUpdate(
       { _id: id, userId },
-      { currentCode: code },
+      {
+        $set: {
+          currentCode: code,
+          fileClass: fileClass
+        }
+      },
       { new: true }
     );
 
@@ -229,7 +249,7 @@ export const saveProjectCode = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Project not found or unauthorized' });
     }
 
-    res.json({ message: 'Code saved successfully' });
+    res.json({ message: 'Code saved successfully',project });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
